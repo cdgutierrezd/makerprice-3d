@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MakerPrice 3D - Diseñado para Creadores</title>
+    <!-- Tailwind CSS para diseño moderno -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconos Lucide elegantes -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Tipografía del sistema inspirada en San Francisco de Apple con mayor legibilidad */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            font-size: 15px;
+        }
+        /* Transiciones suaves para los contenidos */
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        /* Desactivar flechas por defecto en inputs numéricos para estilo limpio */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Encabezado Estilo Apple (Vidrio Esmerilado) -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-40 transition-colors">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-[#1d1d1f] text-white rounded-xl flex items-center justify-center shadow-sm">
+                    <i data-lucide="box" class="w-5.5 h-5.5"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-[#1d1d1f]">MakerPrice 3D</h1>
+                    <p class="text-[11px] text-slate-400 font-bold tracking-widest uppercase">SOFTWARE DE ESTIMACIÓN DE COSTOS</p>
+                </div>
+            </div>
+            
+            <!-- Navegación por pestañas de control -->
+            <nav class="flex bg-[#f5f5f7] p-1 rounded-xl border border-slate-200/50">
+                <button onclick="switchTab('calculadora')" id="btn-tab-calculadora" class="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 bg-white text-[#1d1d1f] shadow-sm border border-slate-200/40">
+                    <i data-lucide="layers" class="w-4 h-4"></i>
+                    Orden & Piezas
+                </button>
+                <button onclick="switchTab('configuracion')" id="btn-tab-configuracion" class="flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 text-slate-500 hover:text-[#1d1d1f]">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                    Ajustes Globales
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="flex-grow max-w-6xl w-full mx-auto p-4 sm:p-6">
+        
+        <!-- ================= PESTAÑA 1: CALCULADORA DE PIEZAS ================= -->
+        <div id="tab-calculadora" class="tab-content active space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Panel Formulario (Izquierda) - Compacto con h-fit para evitar que el botón quede abajo -->
+                <div class="lg:col-span-5 bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm h-fit space-y-5">
+                    <div>
+                        <div class="border-b border-slate-100 pb-4 mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 id="formulario-titulo" class="text-base font-bold text-[#1d1d1f] flex items-center gap-2">
+                                    <i data-lucide="plus-circle" class="text-blue-500 w-5 h-5"></i>
+                                    Crear Nueva Pieza
+                                </h2>
+                                <p class="text-xs text-slate-400">Define los parámetros de impresión de la pieza.</p>
+                            </div>
+                            <button id="btn-cancelar-edicion" onclick="cancelarEdicion()" class="hidden text-xs font-semibold text-rose-500 hover:text-rose-600 flex items-center gap-1">
+                                <i data-lucide="x-circle" class="w-4 h-4"></i>
+                                Cancelar
+                            </button>
+                        </div>
+
+                        <!-- Campos del formulario sin placeholders de ejemplos distractores -->
+                        <div class="space-y-4">
+                            <!-- ID oculto para edición -->
+                            <input type="hidden" id="pieza-id-edicion" value="">
+
+                            <!-- Nombre de la pieza sin holders confusos -->
+                            <div>
+                                <label for="pieza-nombre" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nombre de la pieza</label>
+                                <input type="text" id="pieza-nombre" placeholder="Nombre de la pieza" class="w-full px-4 py-3 bg-[#f5f5f7] border border-slate-200/80 rounded-xl text-sm font-semibold focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all outline-none">
+                            </div>
+
+                            <!-- Selector de filamento -->
+                            <div>
+                                <label for="pieza-filamento" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Seleccionar Filamento</label>
+                                <div class="relative">
+                                    <select id="pieza-filamento" class="w-full pl-4 pr-10 py-3 bg-[#f5f5f7] border border-slate-200/80 rounded-xl text-sm font-semibold focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all outline-none appearance-none">
+                                        <!-- Se llena dinámicamente -->
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                                        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Metraje utilizado sin holders confusos -->
+                            <div>
+                                <label for="pieza-metros" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Metros de filamento requeridos</label>
+                                <div class="relative">
+                                    <input type="number" id="pieza-metros" min="0.01" step="0.01" placeholder="Cantidad de metros" class="w-full pl-4 pr-16 py-3 bg-[#f5f5f7] border border-slate-200/80 rounded-xl text-sm font-semibold focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all outline-none">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400 uppercase">Metros</span>
+                                </div>
+                            </div>
+
+                            <!-- Tiempo de impresión -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label for="pieza-horas" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tiempo: Horas</label>
+                                    <div class="relative">
+                                        <input type="number" id="pieza-horas" min="0" placeholder="Horas" class="w-full pl-4 pr-12 py-3 bg-[#f5f5f7] border border-slate-200/80 rounded-xl text-sm font-semibold focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all outline-none">
+                                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">hrs</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="pieza-minutos" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Minutos</label>
+                                    <div class="relative">
+                                        <input type="number" id="pieza-minutos" min="0" max="59" placeholder="Minutos" class="w-full pl-4 pr-12 py-3 bg-[#f5f5f7] border border-slate-200/80 rounded-xl text-sm font-semibold focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all outline-none">
+                                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">min</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Margen de Ganancia (0% a 100%, por defecto 50%) -->
+                            <div>
+                                <div class="flex justify-between items-center mb-1.5">
+                                    <label for="pieza-margen" class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Margen de Ganancia</label>
+                                    <span id="label-margen" class="text-xs font-extrabold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md">50%</span>
+                                </div>
+                                <input type="range" id="pieza-margen" min="0" max="100" step="5" value="50" class="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                                <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-wider">
+                                    <span>0% (Al Costo)</span>
+                                    <span>100% (Duplicar)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de acción principal -->
+                    <button id="btn-guardar-pieza" onclick="guardarPiezaEnColeccion()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition-all duration-200 shadow-sm flex items-center justify-center gap-2">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span id="txt-boton-guardar">Añadir Pieza a la Orden</span>
+                    </button>
+                </div>
+
+                <!-- Panel de Resultados & Listado (Derecha) -->
+                <div class="lg:col-span-7 space-y-5">
+                    
+                    <!-- 1. PREVISUALIZACIÓN INDEPENDIENTE DE LA PIEZA ACTUAL (NEGRO APPLE PRO) -->
+                    <div class="bg-gradient-to-br from-[#1d1d1f] to-[#2d2d30] text-white border border-slate-800 rounded-2xl p-6 shadow-lg space-y-4 relative overflow-hidden">
+                        <div class="absolute -right-8 -top-8 opacity-[0.02]">
+                            <i data-lucide="activity" class="w-36 h-36"></i>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-3 gap-3">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">En Edición / Vista Previa</h3>
+                                <h4 id="vista-previa-nombre" class="text-base font-bold text-white truncate max-w-[280px] mt-0.5">Esperando datos...</h4>
+                            </div>
+                            <div class="text-left sm:text-right flex items-center gap-4">
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Costo Neto (Fabricación)</span>
+                                    <span id="vista-previa-costo-fabricacion" class="text-sm font-bold text-slate-300">$ 0.00</span>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Precio Sugerido</span>
+                                    <span id="vista-previa-precio" class="text-lg font-black text-emerald-400">$ 0.00 COP</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mini desglose dinámico con números de mejor tamaño -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                <span class="text-[10px] text-slate-400 block font-bold uppercase">Filamento</span>
+                                <span id="vista-previa-mat" class="text-sm font-extrabold text-white mt-1 block">$ 0.00</span>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                <span class="text-[10px] text-slate-400 block font-bold uppercase">Energía</span>
+                                <span id="vista-previa-ene" class="text-sm font-extrabold text-white mt-1 block">$ 0.00</span>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/5">
+                                <span class="text-[10px] text-slate-400 block font-bold uppercase">Desgaste</span>
+                                <span id="vista-previa-des" class="text-sm font-extrabold text-white mt-1 block">$ 0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. CONSOLIDADO GENERAL DE LA ORDEN COMPLETA (BLANCO PREMIUM CON DETALLES) -->
+                    <div class="bg-white border border-slate-200/60 text-[#1d1d1f] rounded-2xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                        <div class="relative z-10">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                <div>
+                                    <span class="text-[10px] font-extrabold tracking-widest text-slate-400 uppercase">PRECIO TOTAL DE LA ORDEN</span>
+                                    <div id="orden-precio-total" class="text-4xl font-black mt-1 text-slate-900">$ 0.00 COP</div>
+                                    <div class="flex flex-wrap items-center gap-3 mt-1.5 text-xs">
+                                        <span id="orden-contador-piezas" class="text-slate-400 font-bold">0 piezas agregadas</span>
+                                        <span class="text-slate-200">|</span>
+                                        <span id="orden-tiempo-total" class="text-slate-500 font-bold flex items-center gap-1">
+                                            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                                            Tiempo Total: 0h 0m
+                                        </span>
+                                        <span class="text-slate-200">|</span>
+                                        <span class="text-emerald-600 font-bold flex items-center gap-1">
+                                            <i data-lucide="trending-up" class="w-3.5 h-3.5"></i>
+                                            Ganancia Total: <span id="orden-ganancia-total">$ 0.00</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="limpiarOrdenCompleta()" class="px-4 py-2.5 bg-[#f5f5f7] hover:bg-slate-200/80 text-[#1d1d1f] border border-slate-200/50 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm">
+                                        <i data-lucide="rotate-ccw" class="w-4 h-4 text-slate-500"></i>
+                                        Nueva Orden
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Desglose de Analítica General simétrico con el de edición de pieza -->
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5 mt-5 border-t border-slate-100">
+                                <div class="flex items-center gap-2">
+                                    <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                        <i data-lucide="droplet" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Filamento Total</span>
+                                        <span id="orden-material-total" class="text-sm font-extrabold text-slate-800 font-mono">$ 0.00</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                                        <i data-lucide="zap" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Luz Total</span>
+                                        <span id="orden-luz-total" class="text-sm font-extrabold text-slate-800 font-mono">$ 0.00</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+                                        <i data-lucide="settings" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Máquina Total</span>
+                                        <span id="orden-desgaste-total" class="text-sm font-extrabold text-slate-800 font-mono">$ 0.00</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                                        <i data-lucide="box" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Total Fabricación</span>
+                                        <span id="orden-costo-total" class="text-sm font-extrabold text-emerald-600 font-mono">$ 0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. LISTADO DE PIEZAS EN LA ORDEN -->
+                    <div class="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm space-y-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Artículos en la Orden actual</h3>
+                        
+                        <!-- Caja de scroll para la tabla -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
+                                        <th class="py-3">Pieza</th>
+                                        <th class="py-3 text-right">Uso de Filamento</th>
+                                        <th class="py-3 text-right">Tiempo</th>
+                                        <th class="py-3 text-right">Precio Sugerido</th>
+                                        <th class="py-3 text-center w-24">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-piezas-orden" class="divide-y divide-slate-100 text-slate-700 font-semibold">
+                                    <!-- Se llena dinámicamente con JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA 2: CONFIGURACIÓN GLOBAL ================= -->
+        <div id="tab-configuracion" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Ajustes de Consumo (Izquierda) -->
+                <div class="lg:col-span-5 bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm space-y-5">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h2 class="text-sm font-bold text-[#1d1d1f] flex items-center gap-2">
+                            <i data-lucide="sliders" class="text-blue-500 w-4 h-4"></i>
+                            Ajustes Operativos Fijos
+                        </h2>
+                        <p class="text-[11px] text-slate-400">Valores por defecto para tus estimaciones de energía y máquina.</p>
+                    </div>
+
+                    <!-- Costo por kilovatio hora -->
+                    <div>
+                        <label for="config-kwh" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Tarifa Kilovatio Hora (CENS)</label>
+                        <div class="relative">
+                            <input type="number" id="config-kwh" step="0.01" class="w-full pl-4 pr-16 py-3 bg-[#f5f5f7] border border-slate-200/80 rounded-xl text-sm font-bold focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all outline-none">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">$/kWh</span>
+                        </div>
+                    </div>
+
+                    <!-- Consumo de la impresora -->
+                    <div>
+                        <label for="config-watts" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Consumo Promedio de Impresora</label>
+                        <div class="relative">
+                            <input type="number" id="config-watts" class="w-full pl-4 pr-16 py-3 bg-[#f5f5f7] border border-slate-200/80 rounded-xl text-sm font-bold focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all outline-none">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">Watts</span>
+                        </div>
+                    </div>
+
+                    <!-- Mantenimiento de la impresora -->
+                    <div>
+                        <label for="config-desgaste" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Costo de Mantenimiento / Depreciación</label>
+                        <div class="relative">
+                            <input type="number" id="config-desgaste" class="w-full pl-4 pr-16 py-3 bg-[#f5f5f7] border border-slate-200/80 rounded-xl text-sm font-bold focus:ring-1 focus:ring-blue-500 focus:bg-white transition-all outline-none">
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">$/hora</span>
+                        </div>
+                    </div>
+
+                    <button onclick="guardarConfigGlobal()" class="w-full py-3.5 bg-[#1d1d1f] hover:bg-[#2d2d30] text-white font-bold rounded-xl text-xs transition-all shadow-sm flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i>
+                        Guardar Parámetros Globales
+                    </button>
+                </div>
+
+                <!-- Catálogo de Filamentos por Metraje (Derecha) -->
+                <div class="lg:col-span-7 bg-white border border-slate-200/60 rounded-2xl p-6 shadow-sm flex flex-col justify-between space-y-6">
+                    <div class="space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex justify-between items-center">
+                            <div>
+                                <h2 class="text-sm font-bold text-[#1d1d1f] flex items-center gap-2">
+                                    <i data-lucide="beaker" class="text-blue-500 w-4 h-4"></i>
+                                    Inventario de Filamentos
+                                </h2>
+                                <p class="text-[11px] text-slate-400">Introduce marcas y costos reales del metraje de tus rollos.</p>
+                            </div>
+                            <button id="btn-cancelar-fil-edicion" onclick="cancelarFilamentoEdicion()" class="hidden text-xs font-bold text-rose-500 hover:text-rose-600">
+                                Cancelar Edición
+                            </button>
+                        </div>
+
+                        <!-- Formulario para agregar / editar filamentos sin holders complejos -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-[#f5f5f7] p-4 rounded-xl border border-slate-200/50">
+                            <!-- ID oculto del filamento en edición -->
+                            <input type="hidden" id="filamento-id-edicion" value="">
+
+                            <div class="sm:col-span-4">
+                                <label for="fil-nombre" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nombre</label>
+                                <input type="text" id="fil-nombre" placeholder="Nombre de filamento" class="w-full px-3 py-2.5 bg-white border border-slate-200/80 rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label for="fil-costo" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Costo Rollo (COP)</label>
+                                <input type="number" id="fil-costo" placeholder="Precio" class="w-full px-3 py-2.5 bg-white border border-slate-200/80 rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div class="sm:col-span-3">
+                                <label for="fil-metros" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Metros</label>
+                                <input type="number" id="fil-metros" placeholder="Metros" class="w-full px-3 py-2.5 bg-white border border-slate-200/80 rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500">
+                            </div>
+                            <div class="sm:col-span-2 flex items-end">
+                                <button id="btn-guardar-fil" onclick="guardarFilamento()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm flex items-center justify-center shadow-sm">
+                                    <i data-lucide="plus" id="icono-btn-fil" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Filamentos -->
+                        <div class="overflow-y-auto max-h-56 pr-1">
+                            <table class="w-full text-left text-sm border-collapse">
+                                <thead>
+                                    <tr class="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
+                                        <th class="py-2">Filamento</th>
+                                        <th class="py-2 text-right">Costo / Rollo</th>
+                                        <th class="py-2 text-right">Largo</th>
+                                        <th class="py-2 text-right">Precio x Metro</th>
+                                        <th class="py-2 text-center w-24">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-filamentos" class="divide-y divide-slate-100 text-slate-700 font-semibold">
+                                    <!-- Dinámico por JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="text-[10px] text-slate-400 pt-4 border-t border-slate-100 flex items-center justify-center gap-1">
+                        <i data-lucide="info" class="w-3 h-3"></i>
+                        <span>Los cambios en el catálogo se guardan de forma offline en el navegador.</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer minimalista -->
+    <footer class="bg-white border-t border-slate-200/60 py-6 mt-12">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400 font-medium">
+            <p>© 2026 MakerPrice 3D. Entorno local seguro.</p>
+            <span class="flex items-center gap-1.5 text-emerald-500">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Almacenamiento Offline Activo
+            </span>
+        </div>
+    </footer>
+
+    <!-- JS de Lógica e Interacción -->
+    <script>
+        let configuracionGlobal = {
+            costoKwh: 915.90,
+            consumoWatts: 150,
+            desgastePorHora: 300
+        };
+
+        // Inventario por defecto si el LocalStorage está vacío
+        let catalogoFilamentos = [
+            { id: 1, nombre: "PLA Estándar Blanco", costoRollo: 80000, metrosTotales: 330 },
+            { id: 2, nombre: "PLA Premium CENS", costoRollo: 95000, metrosTotales: 330 },
+            { id: 3, nombre: "PETG Técnico Gris", costoRollo: 110000, metrosTotales: 320 }
+        ];
+
+        // Orden de impresión actual
+        let ordenActual = [];
+
+        // --- MANEJO DE NAVEGACIÓN (TABS) ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.className = "flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 text-slate-500 hover:text-[#1d1d1f]";
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            const btnActivo = document.getElementById(`btn-tab-${tabId}`);
+            btnActivo.className = "flex items-center gap-2 px-5 py-2.5 text-xs font-bold rounded-lg transition-all duration-200 bg-white text-[#1d1d1f] shadow-sm border border-slate-200/40";
+        }
+
+        // --- CARGA DE DATOS LOCALES ---
+        function cargarDatosIniciales() {
+            // Cargar configuración de máquina
+            const configGuardada = localStorage.getItem('maker3d_config');
+            if (configGuardada) {
+                configuracionGlobal = JSON.parse(configGuardada);
+            }
+            document.getElementById('config-kwh').value = configuracionGlobal.costoKwh;
+            document.getElementById('config-watts').value = configuracionGlobal.consumoWatts;
+            document.getElementById('config-desgaste').value = configuracionGlobal.desgastePorHora;
+
+            // Cargar filamentos
+            const filamentosGuardados = localStorage.getItem('maker3d_filamentos');
+            if (filamentosGuardados) {
+                catalogoFilamentos = JSON.parse(filamentosGuardados);
+            }
+
+            // Cargar orden de piezas actual
+            const ordenGuardada = localStorage.getItem('maker3d_orden');
+            if (ordenGuardada) {
+                ordenActual = JSON.parse(ordenGuardada);
+            }
+
+            renderizarFilamentos();
+            actualizarSelectorFilamentos();
+            actualizarTablaOrden();
+            escucharCambiosEntradas();
+            previsualizarPiezaActual();
+        }
+
+        function guardarConfigGlobal() {
+            const kwh = parseFloat(document.getElementById('config-kwh').value) || 0;
+            const watts = parseInt(document.getElementById('config-watts').value) || 0;
+            const desgaste = parseFloat(document.getElementById('config-desgaste').value) || 0;
+
+            configuracionGlobal = {
+                costoKwh: kwh,
+                consumoWatts: watts,
+                desgastePorHora: desgaste
+            };
+
+            localStorage.setItem('maker3d_config', JSON.stringify(configuracionGlobal));
+            recalcularTodasLasPiezas();
+            mostrarNotificacion("Ajustes de operación actualizados.");
+        }
+
+        // --- GESTIÓN DEL CATÁLOGO DE FILAMENTOS ---
+        function renderizarFilamentos() {
+            const tbody = document.getElementById('tabla-filamentos');
+            tbody.innerHTML = '';
+
+            if (catalogoFilamentos.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-4 text-center text-slate-400 italic">No tienes filamentos guardados.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            catalogoFilamentos.forEach(fil => {
+                const costoMetro = fil.metrosTotales > 0 ? (fil.costoRollo / fil.metrosTotales) : 0;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 transition-colors border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="py-3 font-bold text-[#1d1d1f]">${fil.nombre}</td>
+                    <td class="py-3 text-right font-mono">${formatearMoneda(fil.costoRollo)}</td>
+                    <td class="py-3 text-right font-mono">${fil.metrosTotales} m</td>
+                    <td class="py-3 text-right text-slate-500 font-mono">${formatearMoneda(costoMetro)}/m</td>
+                    <td class="py-3 flex justify-center gap-2">
+                        <button onclick="cargarFilamentoEnEdicion(${fil.id})" class="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1 rounded-md transition-colors" title="Editar">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="eliminarFilamento(${fil.id})" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1 rounded-md transition-colors" title="Eliminar">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        function actualizarSelectorFilamentos() {
+            const select = document.getElementById('pieza-filamento');
+            select.innerHTML = '';
+
+            if (catalogoFilamentos.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "Sin filamentos disponibles";
+                select.appendChild(opt);
+                return;
+            }
+
+            catalogoFilamentos.forEach(fil => {
+                const costMeter = fil.metrosTotales > 0 ? (fil.costoRollo / fil.metrosTotales).toFixed(1) : 0;
+                const opt = document.createElement('option');
+                opt.value = fil.id;
+                opt.textContent = `${fil.nombre} ($${costMeter}/m)`;
+                select.appendChild(opt);
+            });
+        }
+
+        function guardarFilamento() {
+            const idEdicion = document.getElementById('filamento-id-edicion').value;
+            const nombre = document.getElementById('fil-nombre').value.trim();
+            const costo = parseFloat(document.getElementById('fil-costo').value) || 0;
+            const metros = parseFloat(document.getElementById('fil-metros').value) || 0;
+
+            if (!nombre || costo <= 0 || metros <= 0) {
+                mostrarNotificacion("Por favor, llena todos los campos de filamento.", true);
+                return;
+            }
+
+            if (idEdicion) {
+                // Editar filamento existente
+                const index = catalogoFilamentos.findIndex(f => f.id === parseInt(idEdicion));
+                if (index !== -1) {
+                    catalogoFilamentos[index] = { id: parseInt(idEdicion), nombre, costoRollo: costo, metrosTotales: metros };
+                    mostrarNotificacion("Filamento actualizado.");
+                }
+                cancelarFilamentoEdicion();
+            } else {
+                // Crear filamento nuevo
+                const nuevo = { id: Date.now(), nombre, costoRollo: costo, metrosTotales: metros };
+                catalogoFilamentos.push(nuevo);
+                mostrarNotificacion("Nuevo filamento guardado.");
+            }
+
+            localStorage.setItem('maker3d_filamentos', JSON.stringify(catalogoFilamentos));
+            renderizarFilamentos();
+            actualizarSelectorFilamentos();
+            recalcularTodasLasPiezas();
+            previsualizarPiezaActual();
+            
+            // Limpiar inputs
+            document.getElementById('fil-nombre').value = '';
+            document.getElementById('fil-costo').value = '';
+            document.getElementById('fil-metros').value = '';
+        }
+
+        function cargarFilamentoEnEdicion(id) {
+            const fil = catalogoFilamentos.find(f => f.id === id);
+            if (!fil) return;
+
+            document.getElementById('filamento-id-edicion').value = fil.id;
+            document.getElementById('fil-nombre').value = fil.nombre;
+            document.getElementById('fil-costo').value = fil.costoRollo;
+            document.getElementById('fil-metros').value = fil.metrosTotales;
+
+            // Cambiar look del botón de acción en inventario
+            document.getElementById('btn-cancelar-fil-edicion').classList.remove('hidden');
+            const iconBtn = document.getElementById('icono-btn-fil');
+            iconBtn.setAttribute('data-lucide', 'save');
+            lucide.createIcons();
+            
+            document.getElementById('fil-nombre').focus();
+        }
+
+        function cancelarFilamentoEdicion() {
+            document.getElementById('filamento-id-edicion').value = "";
+            document.getElementById('fil-nombre').value = '';
+            document.getElementById('fil-costo').value = '';
+            document.getElementById('fil-metros').value = '';
+
+            document.getElementById('btn-cancelar-fil-edicion').classList.add('hidden');
+            const iconBtn = document.getElementById('icono-btn-fil');
+            iconBtn.setAttribute('data-lucide', 'plus');
+            lucide.createIcons();
+        }
+
+        function eliminarFilamento(id) {
+            catalogoFilamentos = catalogoFilamentos.filter(f => f.id !== id);
+            localStorage.setItem('maker3d_filamentos', JSON.stringify(catalogoFilamentos));
+            renderizarFilamentos();
+            actualizarSelectorFilamentos();
+            recalcularTodasLasPiezas();
+            previsualizarPiezaActual();
+            mostrarNotificacion("Filamento removido.");
+        }
+
+        // --- 5. LOGICA DE CÁLCULO INDEPENDIENTE & PREVISUALIZACIÓN ---
+        function realizarFórmulasDeCalculo(metros, horas, minutos, idFilamento, margen) {
+            const filamento = catalogoFilamentos.find(f => f.id === idFilamento);
+            if (!filamento || filamento.metrosTotales <= 0) {
+                return { totalFabricacion: 0, costoMaterial: 0, costoEnergia: 0, costoDesgaste: 0, ganancia: 0, precioVenta: 0 };
+            }
+
+            // A. Costo del Filamento por metro
+            const costoMetro = filamento.costoRollo / filamento.metrosTotales;
+            const costoMaterial = metros * costoMetro;
+
+            // B. Costo Eléctrico (Consumo en kW/h * Tiempo en horas * Tarifa)
+            const tiempoEnHoras = horas + (minutos / 60);
+            const consumoKW = configuracionGlobal.consumoWatts / 1000;
+            const costoEnergia = tiempoEnHoras * consumoKW * configuracionGlobal.costoKwh;
+
+            // C. Costo de Desgaste o Depreciación
+            const costoDesgaste = tiempoEnHoras * configuracionGlobal.desgastePorHora;
+
+            // Costo total neto
+            const totalFabricacion = costoMaterial + costoEnergia + costoDesgaste;
+
+            // Cálculo del margen seleccionado
+            const ganancia = totalFabricacion * (margen / 100);
+            const precioVenta = totalFabricacion + ganancia;
+
+            return { totalFabricacion, costoMaterial, costoEnergia, costoDesgaste, ganancia, precioVenta };
+        }
+
+        // Previsualiza en tiempo real sobre la tarjeta del módulo superior
+        function previsualizarPiezaActual() {
+            const nombre = document.getElementById('pieza-nombre').value.trim() || "Pieza sin Guardar";
+            const idFilamento = parseInt(document.getElementById('pieza-filamento').value);
+            const metros = parseFloat(document.getElementById('pieza-metros').value) || 0;
+            const horas = parseInt(document.getElementById('pieza-horas').value) || 0;
+            const minutesInput = document.getElementById('pieza-minutos');
+            const minutos = parseInt(minutesInput.value) || 0;
+            const margen = parseInt(document.getElementById('pieza-margen').value) || 50;
+
+            const calc = realizarFórmulasDeCalculo(metros, horas, minutos, idFilamento, margen);
+
+            document.getElementById('vista-previa-nombre').textContent = nombre;
+            document.getElementById('vista-previa-precio').textContent = formatearMoneda(calc.precioVenta);
+            document.getElementById('vista-previa-costo-fabricacion').textContent = formatearMoneda(calc.totalFabricacion);
+            document.getElementById('vista-previa-mat').textContent = formatearMoneda(calc.costoMaterial);
+            document.getElementById('vista-previa-ene').textContent = formatearMoneda(calc.costoEnergia);
+            document.getElementById('vista-previa-des').textContent = formatearMoneda(calc.costoDesgaste);
+        }
+
+        function escucharCambiosEntradas() {
+            const inputs = ['pieza-nombre', 'pieza-filamento', 'pieza-metros', 'pieza-horas', 'pieza-minutos', 'pieza-margen'];
+            inputs.forEach(id => {
+                document.getElementById(id).addEventListener('input', previsualizarPiezaActual);
+            });
+            document.getElementById('pieza-margen').addEventListener('input', (e) => {
+                document.getElementById('label-margen').textContent = `${e.target.value}%`;
+            });
+        }
+
+        // --- 6. GESTIÓN DE LA ORDEN DE PIEZAS (CRUD COMPLETO) ---
+        function guardarPiezaEnColeccion() {
+            const idEdicion = document.getElementById('pieza-id-edicion').value;
+            const nombre = document.getElementById('pieza-nombre').value.trim();
+            const idFilamento = parseInt(document.getElementById('pieza-filamento').value);
+            const metros = parseFloat(document.getElementById('pieza-metros').value) || 0;
+            const horas = parseInt(document.getElementById('pieza-horas').value) || 0;
+            const minutos = parseInt(document.getElementById('pieza-minutos').value) || 0;
+            const margen = parseInt(document.getElementById('pieza-margen').value) || 50;
+
+            if (!nombre) {
+                mostrarNotificacion("Ingresa un nombre para poder guardar la pieza.", true);
+                return;
+            }
+            if (isNaN(idFilamento)) {
+                mostrarNotificacion("Debes registrar y seleccionar un filamento válido.", true);
+                return;
+            }
+            if (metros <= 0) {
+                mostrarNotificacion("Por favor, introduce el metraje de la pieza.", true);
+                return;
+            }
+            if (horas === 0 && minutos === 0) {
+                mostrarNotificacion("El tiempo de impresión debe ser mayor a 0.", true);
+                return;
+            }
+
+            if (idEdicion) {
+                // Editar pieza existente en la orden actual
+                const index = ordenActual.findIndex(p => p.id === parseInt(idEdicion));
+                if (index !== -1) {
+                    ordenActual[index] = {
+                        id: parseInt(idEdicion),
+                        nombre,
+                        idFilamento,
+                        metros,
+                        horas,
+                        minutos,
+                        margen
+                    };
+                    mostrarNotificacion("Cambios en la pieza aplicados.");
+                }
+                cancelarEdicion();
+            } else {
+                // Crear nueva pieza independiente
+                const nuevaPieza = {
+                    id: Date.now(),
+                    nombre,
+                    idFilamento,
+                    metros,
+                    horas,
+                    minutos,
+                    margen
+                };
+                ordenActual.push(nuevaPieza);
+                mostrarNotificacion("Pieza añadida a la orden.");
+            }
+
+            localStorage.setItem('maker3d_orden', JSON.stringify(ordenActual));
+            actualizarTablaOrden();
+            limpiarFormularioPieza();
+            previsualizarPiezaActual();
+        }
+
+        function actualizarTablaOrden() {
+            const tbody = document.getElementById('tabla-piezas-orden');
+            tbody.innerHTML = '';
+
+            let totalPrecioOrden = 0;
+            let totalLuzOrden = 0;
+            let totalMaterialOrden = 0;
+            let totalDesgasteOrden = 0;
+            let totalCostoBrutoOrden = 0;
+            let totalGananciaOrden = 0;
+            let totalMinutosOrden = 0; // Acumulador total de minutos de la orden
+
+            if (ordenActual.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-4 text-center text-slate-400 italic">No hay piezas cotizadas en esta orden.</td>
+                    </tr>
+                `;
+                document.getElementById('orden-precio-total').textContent = "$ 0.00 COP";
+                document.getElementById('orden-luz-total').textContent = "$ 0.00";
+                document.getElementById('orden-material-total').textContent = "$ 0.00";
+                document.getElementById('orden-desgaste-total').textContent = "$ 0.00";
+                document.getElementById('orden-costo-total').textContent = "$ 0.00";
+                document.getElementById('orden-ganancia-total').textContent = "$ 0.00";
+                document.getElementById('orden-contador-piezas').textContent = "0 piezas agregadas";
+                document.getElementById('orden-tiempo-total').innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5"></i> Tiempo Total: 0h 0m`;
+                lucide.createIcons();
+                return;
+            }
+
+            ordenActual.forEach(pieza => {
+                const filamento = catalogoFilamentos.find(f => f.id === pieza.idFilamento);
+                const filNombre = filamento ? filamento.nombre : "Desconocido";
+
+                const calc = realizarFórmulasDeCalculo(pieza.metros, pieza.horas, pieza.minutos, pieza.idFilamento, pieza.margen);
+                
+                totalPrecioOrden += calc.precioVenta;
+                totalLuzOrden += calc.costoEnergia;
+                totalMaterialOrden += calc.costoMaterial;
+                totalDesgasteOrden += calc.costoDesgaste;
+                totalCostoBrutoOrden += calc.totalFabricacion;
+                totalGananciaOrden += calc.ganancia;
+                totalMinutosOrden += (pieza.horas * 60) + pieza.minutos;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 transition-colors border-b border-slate-100 text-sm";
+                tr.innerHTML = `
+                    <td class="py-3">
+                        <span class="font-bold text-[#1d1d1f] block text-sm">${pieza.nombre}</span>
+                        <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">${filNombre} (Margen: ${pieza.margen}%)</span>
+                    </td>
+                    <td class="py-3 text-right font-mono text-sm text-[#1d1d1f]">${pieza.metros.toFixed(2)} m</td>
+                    <td class="py-3 text-right font-mono text-sm text-[#1d1d1f]">${pieza.horas}h ${pieza.minutos}m</td>
+                    <td class="py-3 text-right font-mono text-sm font-black text-blue-600">${formatearMoneda(calc.precioVenta)}</td>
+                    <td class="py-3 flex justify-center gap-1.5">
+                        <button onclick="cargarPiezaEnEdicion(${pieza.id})" class="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded-lg transition-colors" title="Editar">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="eliminarPiezaDeOrden(${pieza.id})" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-colors" title="Eliminar">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Conversión de tiempo total a horas y minutos legibles
+            const totalH = Math.floor(totalMinutosOrden / 60);
+            const totalM = totalMinutosOrden % 60;
+
+            // Actualizar Consolidado de la Orden (Blanco Premium con desglose analítico coherente)
+            document.getElementById('orden-precio-total').textContent = `${formatearMoneda(totalPrecioOrden)} COP`;
+            document.getElementById('orden-material-total').textContent = formatearMoneda(totalMaterialOrden);
+            document.getElementById('orden-luz-total').textContent = formatearMoneda(totalLuzOrden);
+            document.getElementById('orden-desgaste-total').textContent = formatearMoneda(totalDesgasteOrden);
+            document.getElementById('orden-costo-total').textContent = formatearMoneda(totalCostoBrutoOrden);
+            document.getElementById('orden-ganancia-total').textContent = formatearMoneda(totalGananciaOrden);
+            document.getElementById('orden-contador-piezas').textContent = `${ordenActual.length} ${ordenActual.length === 1 ? 'pieza agregada' : 'piezas agregadas'}`;
+            document.getElementById('orden-tiempo-total').innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5"></i> Tiempo Total: ${totalH}h ${totalM}m`;
+            lucide.createIcons();
+        }
+
+        function cargarPiezaEnEdicion(id) {
+            const pieza = ordenActual.find(p => p.id === id);
+            if (!pieza) return;
+
+            document.getElementById('pieza-id-edicion').value = pieza.id;
+            document.getElementById('pieza-nombre').value = pieza.nombre;
+            document.getElementById('pieza-filamento').value = pieza.idFilamento;
+            document.getElementById('pieza-metros').value = pieza.metros;
+            document.getElementById('pieza-horas').value = pieza.horas;
+            document.getElementById('pieza-minutos').value = pieza.minutos;
+            document.getElementById('pieza-margen').value = pieza.margen;
+            document.getElementById('label-margen').textContent = `${pieza.margen}%`;
+
+            // Cambiar vista del formulario para denotar Edición
+            document.getElementById('formulario-titulo').innerHTML = `<i data-lucide="edit-3" class="text-amber-500 w-5 h-5"></i> Editar Pieza`;
+            document.getElementById('txt-boton-guardar').textContent = "Guardar Cambios en Pieza";
+            document.getElementById('btn-cancelar-edicion').classList.remove('hidden');
+            
+            lucide.createIcons();
+            previsualizarPiezaActual();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelarEdicion() {
+            limpiarFormularioPieza();
+            previsualizarPiezaActual();
+        }
+
+        function eliminarPiezaDeOrden(id) {
+            ordenActual = ordenActual.filter(p => p.id !== id);
+            localStorage.setItem('maker3d_orden', JSON.stringify(ordenActual));
+            actualizarTablaOrden();
+            previsualizarPiezaActual();
+            mostrarNotificacion("Pieza eliminada de la orden.");
+        }
+
+        function recalcularTodasLasPiezas() {
+            // Re-renderiza toda la tabla con las variables de material y energía recalculadas
+            actualizarTablaOrden();
+        }
+
+        function limpiarOrdenCompleta() {
+            ordenActual = [];
+            localStorage.removeItem('maker3d_orden');
+            actualizarTablaOrden();
+            limpiarFormularioPieza();
+            previsualizarPiezaActual();
+            mostrarNotificacion("Nueva orden iniciada. Lista de piezas limpia.");
+        }
+
+        function limpiarFormularioPieza() {
+            document.getElementById('pieza-id-edicion').value = "";
+            document.getElementById('pieza-nombre').value = "";
+            document.getElementById('pieza-metros').value = "";
+            document.getElementById('pieza-horas').value = "";
+            document.getElementById('pieza-minutos').value = "";
+            document.getElementById('pieza-margen').value = 50;
+            document.getElementById('label-margen').textContent = "50%";
+
+            document.getElementById('formulario-titulo').innerHTML = `<i data-lucide="plus-circle" class="text-blue-500 w-5 h-5"></i> Crear Nueva Pieza`;
+            document.getElementById('txt-boton-guardar').textContent = "Añadir Pieza a la Orden";
+            document.getElementById('btn-cancelar-edicion').classList.add('hidden');
+            lucide.createIcons();
+        }
+
+        // --- 7. UTILIDADES GENERALES ---
+        function formatearMoneda(valor) {
+            return new Intl.NumberFormat('es-CO', {
+                style: 'currency',
+                currency: 'COP',
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1
+            }).format(valor);
+        }
+
+        function mostrarNotificacion(mensaje, error = false) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 px-4 py-3 rounded-xl shadow-lg text-white text-xs font-semibold flex items-center gap-2 transform translate-y-10 opacity-0 transition-all duration-300 z-50 ${error ? 'bg-rose-600' : 'bg-[#1d1d1f]'}`;
+            toast.innerHTML = `
+                <i data-lucide="${error ? 'alert-circle' : 'check-circle'}" class="w-4 h-4"></i>
+                <span>${mensaje}</span>
+            `;
+            document.body.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => toast.classList.remove('translate-y-10', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- 8. INICIO AUTOMÁTICO ---
+        window.onload = function() {
+            cargarDatosDeAlmacenamiento = cargarDatosIniciales; // Puente para retrocompatibilidad
+            cargarDatosIniciales();
+        };
+    </script>
+</body>
+</html>
