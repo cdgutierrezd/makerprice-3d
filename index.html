@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Iconos Lucide elegantes -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
     <style>
         /* Tipografía del sistema inspirada en San Francisco de Apple con mayor legibilidad */
         body {
@@ -275,16 +276,24 @@
 
                     <!-- 3. LISTADO DE PIEZAS EN LA ORDEN -->
                     <div class="bg-white border border-slate-200/60 rounded-2xl p-5 shadow-sm space-y-4">
-                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">Artículos en la Orden actual</h3>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-2 gap-2">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Artículos en la Orden actual</h3>
+                            <!-- Casilla para filamento total consolidado de todas las piezas -->
+                            <div class="text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-lg font-bold flex items-center gap-1.5 shadow-sm border border-blue-100/40">
+                                <i data-lucide="droplet" class="w-3.5 h-3.5 text-blue-500"></i>
+                                Filamento Total: <span id="tabla-total-metros">0.00 m</span>
+                            </div>
+                        </div>
                         
                         <!-- Caja de scroll para la tabla -->
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm border-collapse">
                                 <thead>
-                                    <tr class="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
+                                    <tr class="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider text-xs">
                                         <th class="py-3">Pieza</th>
-                                        <th class="py-3 text-right">Uso de Filamento</th>
+                                        <th class="py-3 text-right">Filamento</th>
                                         <th class="py-3 text-right">Tiempo</th>
+                                        <th class="py-3 text-right">Costo Fab.</th>
                                         <th class="py-3 text-right">Precio Sugerido</th>
                                         <th class="py-3 text-center w-24">Acción</th>
                                     </tr>
@@ -575,7 +584,6 @@
             }
 
             if (idEdicion) {
-                // Editar filamento existente
                 const index = catalogoFilamentos.findIndex(f => f.id === parseInt(idEdicion));
                 if (index !== -1) {
                     catalogoFilamentos[index] = { id: parseInt(idEdicion), nombre, costoRollo: costo, metrosTotales: metros };
@@ -583,7 +591,6 @@
                 }
                 cancelarFilamentoEdicion();
             } else {
-                // Crear filamento nuevo
                 const nuevo = { id: Date.now(), nombre, costoRollo: costo, metrosTotales: metros };
                 catalogoFilamentos.push(nuevo);
                 mostrarNotificacion("Nuevo filamento guardado.");
@@ -595,7 +602,6 @@
             recalcularTodasLasPiezas();
             previsualizarPiezaActual();
             
-            // Limpiar inputs
             document.getElementById('fil-nombre').value = '';
             document.getElementById('fil-costo').value = '';
             document.getElementById('fil-metros').value = '';
@@ -610,7 +616,6 @@
             document.getElementById('fil-costo').value = fil.costoRollo;
             document.getElementById('fil-metros').value = fil.metrosTotales;
 
-            // Cambiar look del botón de acción en inventario
             document.getElementById('btn-cancelar-fil-edicion').classList.remove('hidden');
             const iconBtn = document.getElementById('icono-btn-fil');
             iconBtn.setAttribute('data-lucide', 'save');
@@ -641,44 +646,40 @@
             mostrarNotificacion("Filamento removido.");
         }
 
-        // --- 5. LOGICA DE CÁLCULO INDEPENDIENTE & PREVISUALIZACIÓN ---
+        // --- GESTIÓN DE CÁLCULO INDEPENDIENTE & PREVISUALIZACIÓN ---
         function realizarFórmulasDeCalculo(metros, horas, minutos, idFilamento, margen) {
             const filamento = catalogoFilamentos.find(f => f.id === idFilamento);
             if (!filamento || filamento.metrosTotales <= 0) {
                 return { totalFabricacion: 0, costoMaterial: 0, costoEnergia: 0, costoDesgaste: 0, ganancia: 0, precioVenta: 0 };
             }
 
-            // A. Costo del Filamento por metro
             const costoMetro = filamento.costoRollo / filamento.metrosTotales;
             const costoMaterial = metros * costoMetro;
 
-            // B. Costo Eléctrico (Consumo en kW/h * Tiempo en horas * Tarifa)
             const tiempoEnHoras = horas + (minutos / 60);
             const consumoKW = configuracionGlobal.consumoWatts / 1000;
             const costoEnergia = tiempoEnHoras * consumoKW * configuracionGlobal.costoKwh;
 
-            // C. Costo de Desgaste o Depreciación
             const costoDesgaste = tiempoEnHoras * configuracionGlobal.desgastePorHora;
 
-            // Costo total neto
             const totalFabricacion = costoMaterial + costoEnergia + costoDesgaste;
 
-            // Cálculo del margen seleccionado
             const ganancia = totalFabricacion * (margen / 100);
             const precioVenta = totalFabricacion + ganancia;
 
             return { totalFabricacion, costoMaterial, costoEnergia, costoDesgaste, ganancia, precioVenta };
         }
 
-        // Previsualiza en tiempo real sobre la tarjeta del módulo superior
         function previsualizarPiezaActual() {
             const nombre = document.getElementById('pieza-nombre').value.trim() || "Pieza sin Guardar";
             const idFilamento = parseInt(document.getElementById('pieza-filamento').value);
             const metros = parseFloat(document.getElementById('pieza-metros').value) || 0;
             const horas = parseInt(document.getElementById('pieza-horas').value) || 0;
-            const minutesInput = document.getElementById('pieza-minutos');
-            const minutos = parseInt(minutesInput.value) || 0;
-            const margen = parseInt(document.getElementById('pieza-margen').value) || 50;
+            const minutos = parseInt(document.getElementById('pieza-minutos').value) || 0;
+            
+            // CORRECCIÓN: Se valida que el valor no esté vacío en lugar de usar "|| 50", permitiendo el 0
+            const margenRaw = document.getElementById('pieza-margen').value;
+            const margen = (margenRaw !== "") ? parseInt(margenRaw) : 50;
 
             const calc = realizarFórmulasDeCalculo(metros, horas, minutos, idFilamento, margen);
 
@@ -700,7 +701,7 @@
             });
         }
 
-        // --- 6. GESTIÓN DE LA ORDEN DE PIEZAS (CRUD COMPLETO) ---
+        // --- GESTIÓN DE LA ORDEN DE PIEZAS (CRUD COMPLETO) ---
         function guardarPiezaEnColeccion() {
             const idEdicion = document.getElementById('pieza-id-edicion').value;
             const nombre = document.getElementById('pieza-nombre').value.trim();
@@ -708,7 +709,10 @@
             const metros = parseFloat(document.getElementById('pieza-metros').value) || 0;
             const horas = parseInt(document.getElementById('pieza-horas').value) || 0;
             const minutos = parseInt(document.getElementById('pieza-minutos').value) || 0;
-            const margen = parseInt(document.getElementById('pieza-margen').value) || 50;
+            
+            // CORRECCIÓN: Se valida el valor de margen evitando que el 0 caiga en el default de 50%
+            const margenRaw = document.getElementById('pieza-margen').value;
+            const margen = (margenRaw !== "") ? parseInt(margenRaw) : 50;
 
             if (!nombre) {
                 mostrarNotificacion("Ingresa un nombre para poder guardar la pieza.", true);
@@ -728,7 +732,6 @@
             }
 
             if (idEdicion) {
-                // Editar pieza existente en la orden actual
                 const index = ordenActual.findIndex(p => p.id === parseInt(idEdicion));
                 if (index !== -1) {
                     ordenActual[index] = {
@@ -744,7 +747,6 @@
                 }
                 cancelarEdicion();
             } else {
-                // Crear nueva pieza independiente
                 const nuevaPieza = {
                     id: Date.now(),
                     nombre,
@@ -774,12 +776,13 @@
             let totalDesgasteOrden = 0;
             let totalCostoBrutoOrden = 0;
             let totalGananciaOrden = 0;
-            let totalMinutosOrden = 0; // Acumulador total de minutos de la orden
+            let totalMinutosOrden = 0;
+            let totalMetrosOrden = 0; // Acumulador de metros total de la orden
 
             if (ordenActual.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="py-4 text-center text-slate-400 italic">No hay piezas cotizadas en esta orden.</td>
+                        <td colspan="6" class="py-4 text-center text-slate-400 italic">No hay piezas cotizadas en esta orden.</td>
                     </tr>
                 `;
                 document.getElementById('orden-precio-total').textContent = "$ 0.00 COP";
@@ -790,6 +793,7 @@
                 document.getElementById('orden-ganancia-total').textContent = "$ 0.00";
                 document.getElementById('orden-contador-piezas').textContent = "0 piezas agregadas";
                 document.getElementById('orden-tiempo-total').innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5"></i> Tiempo Total: 0h 0m`;
+                document.getElementById('tabla-total-metros').textContent = "0.00 m";
                 lucide.createIcons();
                 return;
             }
@@ -807,6 +811,7 @@
                 totalCostoBrutoOrden += calc.totalFabricacion;
                 totalGananciaOrden += calc.ganancia;
                 totalMinutosOrden += (pieza.horas * 60) + pieza.minutos;
+                totalMetrosOrden += pieza.metros;
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50/50 transition-colors border-b border-slate-100 text-sm";
@@ -817,6 +822,9 @@
                     </td>
                     <td class="py-3 text-right font-mono text-sm text-[#1d1d1f]">${pieza.metros.toFixed(2)} m</td>
                     <td class="py-3 text-right font-mono text-sm text-[#1d1d1f]">${pieza.horas}h ${pieza.minutos}m</td>
+                    <!-- Costo de fabricación de cada pieza individual -->
+                    <td class="py-3 text-right font-mono text-xs text-slate-500">${formatearMoneda(calc.totalFabricacion)}</td>
+                    <!-- Precio sugerido / venta -->
                     <td class="py-3 text-right font-mono text-sm font-black text-blue-600">${formatearMoneda(calc.precioVenta)}</td>
                     <td class="py-3 flex justify-center gap-1.5">
                         <button onclick="cargarPiezaEnEdicion(${pieza.id})" class="text-blue-500 hover:text-blue-700 hover:bg-blue-50 p-1.5 rounded-lg transition-colors" title="Editar">
@@ -830,11 +838,9 @@
                 tbody.appendChild(tr);
             });
 
-            // Conversión de tiempo total a horas y minutos legibles
             const totalH = Math.floor(totalMinutosOrden / 60);
             const totalM = totalMinutosOrden % 60;
 
-            // Actualizar Consolidado de la Orden (Blanco Premium con desglose analítico coherente)
             document.getElementById('orden-precio-total').textContent = `${formatearMoneda(totalPrecioOrden)} COP`;
             document.getElementById('orden-material-total').textContent = formatearMoneda(totalMaterialOrden);
             document.getElementById('orden-luz-total').textContent = formatearMoneda(totalLuzOrden);
@@ -843,6 +849,9 @@
             document.getElementById('orden-ganancia-total').textContent = formatearMoneda(totalGananciaOrden);
             document.getElementById('orden-contador-piezas').textContent = `${ordenActual.length} ${ordenActual.length === 1 ? 'pieza agregada' : 'piezas agregadas'}`;
             document.getElementById('orden-tiempo-total').innerHTML = `<i data-lucide="clock" class="w-3.5 h-3.5"></i> Tiempo Total: ${totalH}h ${totalM}m`;
+            
+            // Render de la casilla de filamento total de la tabla
+            document.getElementById('tabla-total-metros').textContent = `${totalMetrosOrden.toFixed(2)} m`;
             lucide.createIcons();
         }
 
@@ -859,7 +868,6 @@
             document.getElementById('pieza-margen').value = pieza.margen;
             document.getElementById('label-margen').textContent = `${pieza.margen}%`;
 
-            // Cambiar vista del formulario para denotar Edición
             document.getElementById('formulario-titulo').innerHTML = `<i data-lucide="edit-3" class="text-amber-500 w-5 h-5"></i> Editar Pieza`;
             document.getElementById('txt-boton-guardar').textContent = "Guardar Cambios en Pieza";
             document.getElementById('btn-cancelar-edicion').classList.remove('hidden');
@@ -883,7 +891,6 @@
         }
 
         function recalcularTodasLasPiezas() {
-            // Re-renderiza toda la tabla con las variables de material y energía recalculadas
             actualizarTablaOrden();
         }
 
@@ -911,7 +918,7 @@
             lucide.createIcons();
         }
 
-        // --- 7. UTILIDADES GENERALES ---
+        // --- UTILIDADES GENERALES ---
         function formatearMoneda(valor) {
             return new Intl.NumberFormat('es-CO', {
                 style: 'currency',
@@ -938,9 +945,9 @@
             }, 3000);
         }
 
-        // --- 8. INICIO AUTOMÁTICO ---
+        // --- INICIO AUTOMÁTICO ---
         window.onload = function() {
-            cargarDatosDeAlmacenamiento = cargarDatosIniciales; // Puente para retrocompatibilidad
+            cargarDatosDeAlmacenamiento = cargarDatosIniciales; 
             cargarDatosIniciales();
         };
     </script>
